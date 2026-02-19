@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐍 Python Playground - 在线Python编译器</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --accent: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --border: #30363d;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        .bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(88,166,255,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(63,185,80,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(210,153,34,0.04) 0%, transparent 50%);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3fb950, #58a6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        .loading-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .loading-bar .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #3fb950, #58a6ff);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .loading-status {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .panel-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-run {
+            background: linear-gradient(135deg, #3fb950, #2ea043);
+            color: white;
+        }
+        
+        .btn-run:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(63,185,80,0.3);
+        }
+        
+        .btn-clear {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-clear:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, #58a6ff, #388bfd);
+            color: white;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 16px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: none;
+            resize: vertical;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        textarea:focus {
+            outline: none;
+        }
+        
+        .output {
+            padding: 16px;
+            min-height: 400px;
+            background: var(--bg-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+        
+        .output .error {
+            color: var(--accent-red);
+        }
+        
+        .output .success {
+            color: var(--accent-green);
+        }
+        
+        .output .info {
+            color: var(--accent-orange);
+        }
+        
+        .output .system {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .examples {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+        
+        .examples h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+        
+        .example-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .example-tag {
+            padding: 8px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .example-tag:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+        }
+        
+        .status-dot.ready {
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg"></div>
+    
+    <div class="container">
+        <header>
+            <h1>🐍 Python Playground</h1>
+            <p>在线 Python 编译器 - 无需安装，随时运行</p>
+            
+            <div class="loading-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="loading-status" id="loadingStatus">
+                <span class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">正在加载 Python 环境...</span>
+                </span>
+            </div>
+        </header>
+        
+        <div class="editor-container">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📝 代码编辑器</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-clear" onclick="clearCode()">🗑️ 清空</button>
+                        <button class="btn btn-run" onclick="runCode()" id="runBtn" disabled>▶️ 运行</button>
+                    </div>
+                </div>
+                <textarea id="codeEditor" placeholder="# 在这里编写 Python 代码...
+print('Hello, World!')" spellcheck="false"></textarea>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📺 输出</span>
+                    <button class="btn btn-clear" onclick="clearOutput()">🗑️ 清空</button>
+                </div>
+                <div class="output" id="output">
+                    <span class="system">💡 等待代码运行...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="examples">
+            <h3>💡 示例代码 - 点击加载</h3>
+            <div class="example-tags">
+                <span class="example-tag" onclick="loadExample('hello')">Hello World</span>
+                <span class="example-tag" onclick="loadExample('loop')">循环打印</span>
+                <span class="example-tag" onclick="loadExample('function')">函数定义</span>
+                <span class="example-tag" onclick="loadExample('class')">类与对象</span>
+                <span class="example-tag" onclick="loadExample('file')">文件操作</span>
+                <span class="example-tag" onclick="loadExample('api')">HTTP请求</span>
+                <span class="example-tag" onclick="loadExample('game')">猜数字游戏</span>
+                <span class="example-tag" onclick="loadExample('ai')">AI对话</span>
+            </div>
+        </div>
+        
+        <footer>
+            <p>🚀 Powered by <a href="https://github.com/ocean-Go/python-playground" target="_blank">Python Playground</a> | 使用 Pyodide 运行 Python</p>
+        </footer>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script>
+        let pyodide = null;
+        let isReady = false;
+        
+        const examples = {
+            hello: `print("Hello, World! 🌍")
+print("欢迎使用 Python Playground!")`,
+            loop: `# 循环打印
+for i in range(1, 6):
+    print(f"第 {i} 次循环")`,
+            function: `# 函数定义
+def greet(name):
+    return f"你好, {name}!"
+
+result = greet("小明")
+print(result)`,
+            class: `# 类与对象
+class Dog:
+    def __init__(self, name):
+        self.name = name
+    
+    def bark(self):
+        return f"{self.name} 正在汪汪叫! 🐕"
+
+my_dog = Dog("旺财")
+print(my_dog.bark())`,
+            file: `# 文件操作 (模拟)
+print("📁 文件操作演示:")
+files = ["main.py", "utils.py", "config.json"]
+for f in files:
+    print(f"  - {f}")
+print("文件读取功能需要后端支持")`,
+            api: `# HTTP 请求 (模拟)
+import json
+
+print("🌐 HTTP 请求演示:")
+data = {
+    "name": "Python User",
+    "tools": ["Pyodide", "JavaScript"]
+}
+print(json.dumps(data, indent=2, ensure_ascii=False))`,
+            game: `# 猜数字游戏
+import random
+
+target = random.randint(1, 100)
+print("🎮 猜数字游戏!")
+print("我已经想好了一个1-100的数字")
+
+for attempt in range(1, 8):
+    guess = attempt * 12  # 模拟输入
+    if guess == target:
+        print(f"✅ 恭喜! 第 {attempt} 次猜对了!")
+        break
+    elif guess < target:
+        print(f"第 {attempt} 次: {guess} - 再大一点!")
+    else:
+        print(f"第 {attempt} 次: {guess} - 再小一点!")`,
+            ai: `# AI 对话模拟
+print("🤖 AI 对话演示:")
+responses = {
+    "你好": "你好! 有什么可以帮助你的?",
+    "你是谁": "我是一个运行在浏览器中的 Python 程序!",
+    "谢谢": "不客气! 很高兴能帮到你!"
+}
+
+for question, answer in responses.items():
+    print(f"\n👤: {question}")
+    print(f"🤖: {answer}")`
+        };
+        
+        async function initPyodide() {
+            try {
+                const progress = document.getElementById('progress');
+                const statusText = document.getElementById('statusText');
+                const statusDot = document.getElementById('statusDot');
+                const runBtn = document.getElementById('runBtn');
+                
+                progress.style.width = '30%';
+                statusText.textContent = '正在加载 Python 核心...';
+                
+                pyodide = await loadPyodide();
+                
+                progress.style.width = '70%';
+                statusText.textContent = '正在加载标准库...';
+                
+                // 加载一些常用库
+                await pyodide.loadPackage(['micropip']);
+                
+                progress.style.width = '100%';
+                statusText.textContent = '✅ Python 环境已就绪!';
+                statusDot.classList.add('ready');
+                runBtn.disabled = false;
+                isReady = true;
+                
+                printOutput('system', '🐍 Python 环境已就绪! 开始编写代码吧!');
+            } catch (error) {
+                printOutput('error', '❌ Python 加载失败: ' + error.message);
+            }
+        }
+        
+        function printOutput(type, text) {
+            const output = document.getElementById('output');
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = text;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        async function runCode() {
+            if (!isReady) {
+                printOutput('error', '❌ Python 环境尚未就绪');
+                return;
+            }
+            
+            const code = document.getElementById('codeEditor').value;
+            if (!code.trim()) {
+                printOutput('warning', '⚠️ 请先输入代码');
+                return;
+            }
+            
+            printOutput('info', '▶️ 正在运行...');
+            
+            try {
+                // 重定向 stdout
+                pyodide.setStdout({
+                    batched: (text) => printOutput('success', text)
+                });
+                
+                pyodide.setStderr({
+                    batched: (text) => printOutput('error', text)
+                });
+                
+                await pyodide.runPythonAsync(code);
+                printOutput('success', '\n✅ 运行完成!');
+            } catch (error) {
+                printOutput('error', '❌ 错误: ' + error.message);
+            }
+        }
+        
+        function clearCode() {
+            document.getElementById('codeEditor').value = '';
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '<span class="system">💡 等待代码运行...</span>';
+        }
+        
+        function loadExample(key) {
+            if (examples[key]) {
+                document.getElementById('codeEditor').value = examples[key];
+                printOutput('info', `📝 已加载示例: ${key}`);
+            }
+        }
+        
+        // 初始化
+        initPyodide();
+    </script>
+</body>
+</html>
